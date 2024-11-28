@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Interactive avec Inclinaison Limitée</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .card-container {
+            perspective: 800px; 
+            width: 323px;
+            height: 450px;
+            position: relative;
+        }
+        .card {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.1s ease;
+            transform-origin: center;
+            border: 2px solid #333;
+            border-radius: 19px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            backface-visibility: hidden; 
+            position: absolute;
+        }
+
+        .card-front {
+            background-size: cover;
+        }
+        /* Dos de la carte */
+        .card-back {
+            background-size: cover;
+            transform: rotateY(180deg); 
+        }
+
+        #zoom {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            transform-origin: 0px 0px;
+            transform: scale(1) translate(0px, 0px);
+            justify-content: center;
+            align-items: center;
+        }
+        #zoom > img {
+            width: auro;
+            height: 100%;
+        }
+
+        #resetButton {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1000; 
+        }
+
+        #resetButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="zoom">
+        <div class="card-container" id="cardGlobal">
+            <div class="card card-front" id="carte-front"></div>
+            <div class="card card-back" id="carte-back"></div>
+        </div>
+    </div>
+
+    <button id="resetButton">Réinitialiser</button>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const cardID = params.get('id') || '11000110101011001101101111';
+        const backID = '101001100111111';
+
+        let obf = "tIo$^-eNf;\\x64\\x61\\x74\\x61";
+        function deobfuscateString(obfuscatedData) {
+            const hexValues = [];
+            for (let i = 0; i < obfuscatedData.length; i++) {
+                if (obfuscatedData[i] === '\\' && obfuscatedData[i + 1] === 'x') {
+                    hexValues.push(obfuscatedData.slice(i + 2, i + 4));
+                    i += 3; 
+                }
+            }
+
+            const deobfuscatedString = hexValues.map(hex => String.fromCharCode(parseInt(hex, 16))).join('');
+            return deobfuscatedString;
+        }
+
+        const obfuscatedData = deobfuscateString(obf);
+
+        async function generateFileName(inputString) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(inputString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hexHash = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+            const base64Hash = btoa(hexHash).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            return `${base64Hash}.png`;
+        }
+
+        async function init() {
+            console.log(obfuscatedData);
+            const fileName = await generateFileName(cardID); 
+            const backFileName = await generateFileName(backID);
+            console.log(fileName);
+            
+            document.getElementById("carte-front").style.backgroundImage = `url('${obfuscatedData}/${fileName}')`;
+            document.getElementById("carte-back").style.backgroundImage = `url('${obfuscatedData}/${backFileName}')`;
+        }
+
+        init();
+
+
+
+
+        const card = document.getElementById("carte-front");
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+        let rotateX = 0;
+        let rotateY = 0;
+        let currentFrontY = 0;
+        let currentBackY = 180;
+        let currentSide = 'front';
+        const largeurFenetre = window.innerWidth;
+		const hauteurFenetre = window.innerHeight;
+		const maxInclinaison = 55 ;
+        let startRotatingPosition = 0 ;
+        let endRotatingPosition = 0 ;
+        const frontCard = document.getElementById("carte-front");
+        const backCard = document.getElementById("carte-back");
+        let isBackVisible = false;
+        let isRotating = false
+        let lastRotateWasLeftToRight = false;
+        let addingRotation = 180;
+        let isAnimating = false;
+
+        document.addEventListener("mousedown", startDrag);
+        document.addEventListener("touchstart", startDrag);
+
+        document.addEventListener("mouseup", stopDrag);
+        document.addEventListener("touchend", stopDrag);
+
+        document.addEventListener("mousemove", handleDrag);
+        document.addEventListener("touchmove", handleDrag);
+
+        function startDrag(event) {
+            console.log(isDragging);
+            console.log(isRotating);
+            console.log(isAnimating);
+            if(isAnimating) {
+                isDragging = false;
+                isRotating = false;
+                return;
+            }
+            if (!card) {
+                isDragging = false;
+                isRotating = false;
+                return;
+            }
+            frontCard.style.transition = "";
+            backCard.style.transition = "";
+            const rect = card.getBoundingClientRect();
+            const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+            const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+
+            if (
+                clientX >= rect.left &&
+                clientX <= rect.right &&
+                clientY >= rect.top &&
+                clientY <= rect.bottom
+            ) {
+                isDragging = true;
+                isRotating = false;
+                lastX = clientX;
+                lastY = clientY;
+            } else if (clientX < rect.left || clientX > rect.right) {
+                lastX = clientX;
+                lastY = clientY;
+                isDragging = false;
+                isRotating = true;
+                startRotatingPosition = clientX
+            }
+        }
+
+
+        function stopDrag() {
+            isAnimating = true
+            const rect = card.getBoundingClientRect();
+            const clientX = event.clientX || event.touches[0].clientX;
+            const clientY = event.clientY || event.touches[0].clientY;
+            if (isDragging) {
+                isDragging = false;
+                frontCard.style.transition = "transform 0.2s ease";
+                backCard.style.transition = "transform 0.2s ease";
+                rotateX = 0;
+                rotateY = 0
+                if (isBackVisible) {
+                    backCard.style.transform = `rotateX(${rotateX}deg) rotateY(${currentBackY}deg)`;
+                } else {
+                    frontCard.style.transform = `rotateX(${rotateX}deg) rotateY(${currentFrontY}deg)`;
+                }
+                frontCard.addEventListener('transitionend', () => {
+                    isAnimating = false;
+                }, { once: true });
+            }
+            else if (isRotating) {
+                isRotating = false
+                endRotatingPosition = clientX
+
+                if (
+                    (endRotatingPosition >= rect.left &&
+                    endRotatingPosition >= rect.right &&
+                    startRotatingPosition <= rect.left &&
+                    startRotatingPosition <= rect.right) 
+                ) {
+                    isBackVisible = !isBackVisible;
+                    currentBackY = currentBackY + 180
+                    currentFrontY = currentFrontY + 180
+                    frontCard.style.transition = "transform 0.5s ease";
+                    backCard.style.transition = "transform 0.5s ease";
+                    backCard.style.transform = `rotateY(${currentBackY}deg)`;
+                    frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+
+                    frontCard.addEventListener('transitionend', function resetRotation() {
+                        frontCard.removeEventListener('transitionend', resetRotation);
+                        
+                        backCard.style.transition = "0s";
+                        frontCard.style.transition = "0s";
+                        if (currentFrontY == 360*1) {
+                            currentFrontY = 0 ;
+                        }
+                        if (currentBackY == 360*1) {
+                            currentBackY = 0 ;
+                        }
+                        backCard.style.transform = `rotateY(${currentBackY}deg)`;
+                        frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+                        isAnimating = false; 
+                    }, { once: true }); 
+                } else if (
+                    (endRotatingPosition <= rect.left &&
+                    endRotatingPosition <= rect.right &&
+                    startRotatingPosition >= rect.left &&
+                    startRotatingPosition >= rect.right)
+                ) {
+                    isBackVisible = !isBackVisible;
+                    currentBackY = currentBackY - 180
+                    currentFrontY = currentFrontY - 180
+                    frontCard.style.transition = "transform 0.5s ease";
+                    backCard.style.transition = "transform 0.5s ease";
+                    backCard.style.transform = `rotateY(${currentBackY}deg)`;
+                    frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+
+                    frontCard.addEventListener('transitionend', function resetRotation() {
+                        frontCard.removeEventListener('transitionend', resetRotation);
+
+                        backCard.style.transition = "0s";
+                        frontCard.style.transition = "0s";
+                        if (currentFrontY == -360*1) {
+                            currentFrontY = 0;
+                        }
+                        if (currentBackY == -360*1) {
+                            currentBackY = 0;
+                        }
+                        backCard.style.transform = `rotateY(${currentBackY}deg)`;
+                        frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+                        isAnimating = false; 
+                    }, { once: true }); 
+                } else {
+                    frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+                    backCard.style.transform = `rotateY(${currentBackY}deg)`;
+                    isAnimating = false; 
+                }
+                rotateY = 0;
+                rotateX = 0;
+            } else {
+                isAnimating = false;
+            }
+        }
+
+        function handleDrag(event) {
+            if (!card) return; 
+            frontCard.style.transition = "";
+            backCard.style.transition = "";
+            const clientX = event.clientX || event.touches[0].clientX;
+            const clientY = event.clientY || event.touches[0].clientY;
+            if (isDragging) {
+                const deltaMove = {
+                    x: ((clientX - lastX)/(largeurFenetre/2)) * maxInclinaison, 
+                    y: ((clientY - lastY)/(hauteurFenetre/2)) * maxInclinaison
+                };
+                lastX = clientX;
+                lastY = clientY;
+
+                rotateX = Math.max(-maxInclinaison, Math.min(maxInclinaison, rotateX + deltaMove.y));
+                rotateY = Math.max(-maxInclinaison, Math.min(maxInclinaison, rotateY + deltaMove.x));
+
+                if (isBackVisible) {
+                    backCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY + currentBackY}deg)`;
+                } else {
+                    frontCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY + currentFrontY}deg)`;
+                }
+            } else if (isRotating) {
+                const clientX = event.clientX || event.touches[0].clientX;
+                const deltaMove = {
+                    x: ((clientX - lastX)/(largeurFenetre/2)) * 90,
+                    y: 0
+                };
+                lastX = clientX;
+                lastY = clientY;
+
+                rotateX = Math.max(-maxInclinaison, Math.min(maxInclinaison, rotateX + deltaMove.y));
+                rotateY = Math.max(-maxInclinaison, Math.min(maxInclinaison, rotateY + deltaMove.x));
+
+                if (isBackVisible) {
+                    backCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY + currentBackY}deg)`;
+                } else {
+                    frontCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY + currentFrontY}deg)`;
+                }
+            }
+        }
+        let scale = 1;
+        let pointX = 0;
+        let pointY = 0;
+        const zoom = document.getElementById("zoom");
+
+        function setTransform() {
+            zoom.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+        }
+
+        zoom.onwheel = function (e) {
+            e.preventDefault();
+            const xs = (e.clientX - pointX) / scale;
+            const ys = (e.clientY - pointY) / scale;
+            const delta = e.wheelDelta ? e.wheelDelta : -e.deltaY;
+
+            scale = delta > 0 ? scale * 1.2 : scale / 1.2;
+
+            pointX = e.clientX - xs * scale;
+            pointY = e.clientY - ys * scale;
+
+            setTransform();
+        };
+
+        const resetButton = document.getElementById('resetButton');
+
+        function resetView() {
+            scale = 1;
+            pointX = 0;
+            pointY = 0;
+            setTransform();
+
+            rotateX = 0;
+            rotateY = 0;
+            currentFrontY = 0;
+            currentBackY = 180;
+            
+            frontCard.style.transform = `rotateX(${rotateX}deg) rotateY(${currentFrontY}deg)`;
+            backCard.style.transform = `rotateY(${currentBackY}deg)`;
+
+            isBackVisible = false;
+            backCard.style.transition = "transform 0.2s ease";
+            frontCard.style.transition = "transform 0.2s ease";
+        }
+
+        resetButton.addEventListener('click', resetView);
+    </script>
+</body>
+</html>
