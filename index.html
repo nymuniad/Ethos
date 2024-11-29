@@ -452,20 +452,23 @@
                     e.touches[0].clientY - e.touches[1].clientY
                 );
 
-                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const currentCenter = {
+                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+                };
 
                 // Calcul du facteur de zoom
                 const zoomFactor = currentDistance / initialDistance;
                 scale = Math.max(0.5, Math.min(3, initialScale * zoomFactor)); // Limiter l'échelle
 
-                // Calcul de la translation
-                const deltaX = (centerX - pointX) / scale;
-                const deltaY = (centerY - pointY) / scale;
+                // Ajuster la position pour centrer le zoom sur les doigts
+                const deltaX = (currentCenter.x - startCenter.x) / scale;
+                const deltaY = (currentCenter.y - startCenter.y) / scale;
 
                 pointX -= deltaX * (zoomFactor - 1);
                 pointY -= deltaY * (zoomFactor - 1);
 
+                startCenter = currentCenter; // Mettre à jour le centre pour éviter des sauts
                 setTransform(); // Appliquer la transformation
             }
         });
