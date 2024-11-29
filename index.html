@@ -422,6 +422,52 @@
         }
 
         resetButton.addEventListener('click', resetView);
+
+
+
+        let initialDistance = null; // Distance initiale entre deux doigts
+        let initialScale = 1; // Échelle initiale
+
+        // Gestion du début du pinch
+        zoom.addEventListener("touchstart", (e) => {
+            if (e.touches.length === 2) { // Détecter un geste à deux doigts
+                initialDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialScale = scale; // Enregistrer l'échelle actuelle
+            }
+        });
+
+        // Gestion du mouvement (pinch zoom)
+        zoom.addEventListener("touchmove", (e) => {
+            if (e.touches.length === 2 && initialDistance) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                // Calcul du facteur de zoom
+                const zoomFactor = currentDistance / initialDistance;
+                scale = Math.max(0.5, Math.min(3, initialScale * zoomFactor)); // Limite entre 0.5x et 3x
+
+                setTransform(); // Appliquer la transformation
+            }
+        });
+
+        // Réinitialisation après le pinch
+        zoom.addEventListener("touchend", (e) => {
+            if (e.touches.length < 2) {
+                initialDistance = null;
+            }
+        });
+
+
+
+
+
+
+
     </script>
 </body>
 </html>
