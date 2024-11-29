@@ -427,7 +427,7 @@
 
         let initialDistance = null; // Distance initiale entre les deux doigts
         let initialScale = 1; // Échelle initiale
-        let startCenter = { x: 0, y: 0 }; // Centre initial du pinch
+        let initialCenter = { x: 0, y: 0 }; // Centre initial du pinch
 
         zoom.addEventListener("touchstart", (e) => {
             if (e.touches.length === 2) { // Si deux doigts sont détectés
@@ -436,7 +436,8 @@
                     e.touches[0].clientY - e.touches[1].clientY
                 );
 
-                startCenter = {
+                // Calculer le centre initial du pinch
+                initialCenter = {
                     x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
                     y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
                 };
@@ -461,14 +462,13 @@
                 const zoomFactor = currentDistance / initialDistance;
                 scale = Math.max(0.5, Math.min(3, initialScale * zoomFactor)); // Limiter l'échelle
 
-                // Ajuster la position pour centrer le zoom sur les doigts
-                const deltaX = (currentCenter.x - startCenter.x) / scale;
-                const deltaY = (currentCenter.y - startCenter.y) / scale;
+                // Calcul de la translation pour que le zoom suive les doigts
+                const offsetX = (currentCenter.x - pointX) / scale;
+                const offsetY = (currentCenter.y - pointY) / scale;
 
-                pointX -= deltaX * (zoomFactor - 1);
-                pointY -= deltaY * (zoomFactor - 1);
+                pointX -= offsetX * (zoomFactor - 1);
+                pointY -= offsetY * (zoomFactor - 1);
 
-                startCenter = currentCenter; // Mettre à jour le centre pour éviter des sauts
                 setTransform(); // Appliquer la transformation
             }
         });
