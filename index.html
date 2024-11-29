@@ -47,6 +47,7 @@
             transform-origin: 0px 0px;
             transform: scale(1) translate(0px, 0px);
             justify-content: center;
+            overflow: hidden;
             align-items: center;
         }
         #zoom > img {
@@ -202,8 +203,21 @@
         function stopDrag() {
             isAnimating = true
             const rect = card.getBoundingClientRect();
-            const clientX = event.clientX || event.touches[0].clientX;
-            const clientY = event.clientY || event.touches[0].clientY;
+
+            let clientX, clientY;
+
+            if (event.touches && event.touches[0]) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else if (event.clientX !== undefined && event.clientY !== undefined) {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            } else {
+                clientX = lastX;
+                clientY = lastY;
+            }
+
+
             if (isDragging) {
                 isDragging = false;
                 frontCard.style.transition = "transform 0.2s ease";
@@ -297,8 +311,32 @@
             if (!card) return; 
             frontCard.style.transition = "";
             backCard.style.transition = "";
-            const clientX = event.clientX || event.touches[0].clientX;
-            const clientY = event.clientY || event.touches[0].clientY;
+
+
+            let clientX, clientY;
+
+            if (event.touches && event.touches[0]) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else if (event.clientX !== undefined && event.clientY !== undefined) {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            } else {
+                stopDrag();
+                return;
+            }
+            console.log(window.innerWidth);
+            console.log(clientX);
+            if (
+                clientX <= 0 || clientY <= 0 || 
+                clientX >= (window.innerWidth-3) || 
+                clientY >= window.innerHeight
+            ) {
+                console.log("La souris est sortie de la fenêtre !");
+                stopDrag();
+                return;
+            }
+
             if (isDragging) {
                 const deltaMove = {
                     x: ((clientX - lastX)/(largeurFenetre/2)) * maxInclinaison, 
@@ -316,7 +354,6 @@
                     frontCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY + currentFrontY}deg)`;
                 }
             } else if (isRotating) {
-                const clientX = event.clientX || event.touches[0].clientX;
                 const deltaMove = {
                     x: ((clientX - lastX)/(largeurFenetre/2)) * 90,
                     y: 0
