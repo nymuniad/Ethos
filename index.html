@@ -423,68 +423,6 @@
 
         resetButton.addEventListener('click', resetView);
 
-
-
-        let initialDistance = null; // Distance initiale entre les deux doigts
-        let initialScale = 1; // Échelle initiale
-        let initialCenter = { x: 0, y: 0 }; // Centre initial du pinch
-
-        zoom.addEventListener("touchstart", (e) => {
-            if (e.touches.length === 2) { // Si deux doigts sont détectés
-                initialDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-
-                // Calculer le centre initial du pinch
-                initialCenter = {
-                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-                };
-
-                initialScale = scale; // Sauvegarder l'échelle actuelle
-            }
-        });
-
-        zoom.addEventListener("touchmove", (e) => {
-            if (e.touches.length === 2 && initialDistance) { // Pendant un geste à deux doigts
-                const currentDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-
-                const currentCenter = {
-                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-                };
-
-                // Calcul du facteur de zoom
-                const zoomFactor = currentDistance / initialDistance;
-                scale = Math.max(0.5, Math.min(3, initialScale * zoomFactor)); // Limiter l'échelle
-
-                // Calcul de la translation pour que le zoom suive les doigts
-                const offsetX = (currentCenter.x - pointX) / scale;
-                const offsetY = (currentCenter.y - pointY) / scale;
-
-                pointX -= offsetX * (zoomFactor - 1);
-                pointY -= offsetY * (zoomFactor - 1);
-
-                setTransform(); // Appliquer la transformation
-            }
-        });
-
-        zoom.addEventListener("touchend", (e) => {
-            if (e.touches.length < 2) {
-                initialDistance = null; // Réinitialiser après le zoom
-            }
-        });
-
-
-
-
-
-
-
     </script>
 </body>
 </html>
