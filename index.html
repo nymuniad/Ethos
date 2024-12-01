@@ -61,10 +61,9 @@
             height: 100%;
         }
 
-        #resetButton {
+        #resetButton, #rotateButton {
             position: fixed;
             top: 10px;
-            right: 10px;
             padding: 10px 15px;
             background-color: #007bff;
             color: white;
@@ -73,6 +72,14 @@
             font-size: 16px;
             cursor: pointer;
             z-index: 1000; 
+        }
+
+        #resetButton {
+            right: 10px;
+        }
+
+        #rotateButton {
+            left: 10px;
         }
 
         #resetButton:hover {
@@ -89,6 +96,7 @@
     </div>
 
     <button id="resetButton">Réinitialiser</button>
+    <button id="rotateButton">Tourner la carte</button>
     <script>
         const params = new URLSearchParams(window.location.search);
         const cardID = params.get('id') || '11000110101011001101101111';
@@ -132,7 +140,45 @@
 
         init();
 
+        rotateButton.addEventListener('click', function() {
+            // Empêcher les rotations multiples simultanées
+            if (isAnimating) return;
 
+            isAnimating = true;
+            isBackVisible = !isBackVisible;
+            
+            // Ajuster les rotations
+            currentBackY = currentBackY + 180;
+            currentFrontY = currentFrontY + 180;
+
+            // Appliquer les transitions
+            frontCard.style.transition = "transform 0.5s ease";
+            backCard.style.transition = "transform 0.5s ease";
+
+            // Faire tourner les cartes
+            backCard.style.transform = `rotateY(${currentBackY}deg)`;
+            frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+
+            // Réinitialiser les rotations après l'animation
+            frontCard.addEventListener('transitionend', function resetRotation() {
+                frontCard.removeEventListener('transitionend', resetRotation);
+                
+                backCard.style.transition = "0s";
+                frontCard.style.transition = "0s";
+
+                // Réinitialiser à 0 si on dépasse 360 degrés
+                if (currentFrontY == 360*1) {
+                    currentFrontY = 0;
+                }
+                if (currentBackY == 360*1) {
+                    currentBackY = 0;
+                }
+
+                backCard.style.transform = `rotateY(${currentBackY}deg)`;
+                frontCard.style.transform = `rotateY(${currentFrontY}deg)`;
+                isAnimating = false; 
+            }, { once: true }); 
+        });
 
 
         const card = document.getElementById("carte-front");
